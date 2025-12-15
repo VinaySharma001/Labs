@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab Terminal</title>
+  <script src="https://cdn.jsdelivr.net/npm/xterm@5.3.0/lib/xterm.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      font-weight: 600;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .btn {
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .terminal-container {
+      flex: 1;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    #terminal {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    .status-bar {
+      background: #2a2a2a;
+      padding: 0.75rem 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      color: #aaa;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #4caf50;
+      animation: pulse 2s infinite;
+    }
+
+    .status-dot.disconnected {
+      background: #f44336;
+      animation: none;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .spinner {
+      width: 50px;
+      height: 50px;
+      border: 4px solid rgba(255,255,255,0.1);
+      border-top-color: #667eea;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-overlay.hidden {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .header {
+        padding: 1rem;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .header-actions {
+        width: 100%;
+        justify-content: space-between;
+      }
+
+      .btn {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Lab Terminal</h1>
+    <div class="header-actions">
+      <button class="btn" onclick="resetLab()" id="reset-btn">Reset Lab</button>
+      <button class="btn" onclick="validateLab()" id="validate-btn">Validate</button>
+      <button class="btn" onclick="window.location.href='/'" id="home-btn">← Home</button>
+    </div>
+  </div>
+
+  <div class="terminal-container">
+    <div id="terminal"></div>
+  </div>
+
+  <div class="status-bar">
+    <div class="status-indicator">
+      <span class="status-dot" id="status-dot"></span>
+      <span id="status-text">Connecting...</span>
+    </div>
+    <div id="container-name"></div>
+  </div>
+
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+    <div>Starting lab environment...</div>
+  </div>
+
+  <script>
+    let term;
+    let ws;
+    let containerName = null;
+    let sessionId = null;
+
+    // Get container name from URL
+    const pathParts = window.location.pathname.split('/');
+    const urlContainerName = pathParts[pathParts.length - 2] || pathParts[pathParts.length - 1];
+    
+    // Initialize terminal
+    function initTerminal() {
+      term = new Terminal({
+        cursorBlink: true,
+        fontSize: 14,
+        fontFamily: 'Consolas, "Courier New", monospace',
+        theme: {
+          background: '#1e1e1e',
+          foreground: '#d4d4d4',
+          cursor: '#aeafad',
+          selection: '#264f78'
+        },
+        disableStdin: false,
+        cursorStyle: 'block',
+        rows: 24,
+        cols: 80
+      });
+      
+      const terminalElement = document.getElementById('terminal');
+      term.open(terminalElement);
+      
+      // Focus terminal
+      setTimeout(() => {
+        term.focus();
+      }, 100);
+      
+      // Click to focus
+      terminalElement.addEventListener('click', () => {
+        term.focus();
+      });
+    }
+
+    // Connect WebSocket
+    function connectWebSocket(cname) {
+      const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsHost = window.location.hostname || '127.0.0.1';
+      const wsPort = window.location.port || '8000';
+      const wsUrl = `${wsProtocol}//${wsHost}:${wsPort}/ws/lab/${cname}/`;
+      
+      console.log("Connecting to WebSocket:", wsUrl);
+      ws = new WebSocket(wsUrl);
+
+      ws.onopen = function() {
+        updateStatus('connected', 'Connected');
+        document.getElementById('loading-overlay').classList.add('hidden');
+        term.write("\r\n");
+        term.focus();
+        console.log("WebSocket connected successfully");
+      };
+
+      ws.onerror = function(error) {
+        updateStatus('disconnected', 'Connection Error');
+        console.error("WebSocket error:", error);
+      };
+
+      ws.onclose = function(event) {
+        updateStatus('disconnected', 'Disconnected');
+        console.log("WebSocket closed:", event.code, event.reason);
+      };
+
+      ws.onmessage = function(e) {
+        term.write(e.data);
+      };
+
+      term.onData(function(data) {
+        if(ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(data);
+        }
+      });
+    }
+
+    function updateStatus(status, text) {
+      const dot = document.getElementById('status-dot');
+      const statusText = document.getElementById('status-text');
+      
+      statusText.textContent = text;
+      if (status === 'connected') {
+        dot.classList.remove('disconnected');
+      } else {
+        dot.classList.add('disconnected');
+      }
+    }
+
+    async function resetLab() {
+      if (!containerName) {
+        alert("No active lab to reset");
+        return;
+      }
+
+      if (!confirm("Are you sure you want to reset this lab? All progress will be lost.")) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/reset/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ container_name: containerName })
+        });
+
+        if (response.ok) {
+          alert("Lab reset successfully. Redirecting to home...");
+          window.location.href = '/';
+        } else {
+          throw new Error("Failed to reset lab");
+        }
+      } catch (error) {
+        alert("Error resetting lab: " + error.message);
+      }
+    }
+
+    async function validateLab() {
+      if (!containerName) {
+        alert("No active lab to validate");
+        return;
+      }
+
+      const btn = document.getElementById('validate-btn');
+      btn.disabled = true;
+      btn.textContent = 'Validating...';
+
+      try {
+        const response = await fetch('/api/validate/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ container_name: containerName })
+        });
+
+        const data = await response.json();
+        
+        term.write("\r\n=== Validation Results ===\r\n");
+        term.write(data.result || "No validation output");
+        term.write("\r\n========================\r\n");
+      } catch (error) {
+        term.write("\r\n[Validation error: " + error.message + "]\r\n");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Validate';
+      }
+    }
+
+    // Initialize
+    if (urlContainerName && urlContainerName !== 'lab' && urlContainerName !== '') {
+      // Container name provided in URL
+      containerName = urlContainerName;
+      document.getElementById('container-name').textContent = `Container: ${containerName}`;
+      initTerminal();
+      connectWebSocket(containerName);
+    } else {
+      // Start new lab
+      document.getElementById('loading-overlay').classList.remove('hidden');
+      initTerminal();
+      
+      fetch('/api/start/')
+        .then(res => res.json())
+        .then(data => {
+          if (data.container_name) {
+            containerName = data.container_name;
+            document.getElementById('container-name').textContent = `Container: ${containerName}`;
+            // Update URL without reload
+            window.history.pushState({}, '', `/lab/${containerName}/`);
+            connectWebSocket(containerName);
+          } else {
+            throw new Error("Failed to start lab");
+          }
+        })
+        .catch(error => {
+          document.getElementById('loading-overlay').classList.add('hidden');
+          term.write("\r\n[ERROR: " + error.message + "]\r\n");
+          alert("Error starting lab: " + error.message);
+        });
+    }
+  </script>
+</body>
+</html>
+

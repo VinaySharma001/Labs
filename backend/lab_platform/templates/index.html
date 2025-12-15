@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Labs - Learn System Design by Doing</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+
+    header {
+      text-align: center;
+      color: white;
+      margin-bottom: 3rem;
+      padding: 2rem 0;
+    }
+
+    header h1 {
+      font-size: 3rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+    }
+
+    header p {
+      font-size: 1.25rem;
+      opacity: 0.95;
+    }
+
+    .labs-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 2rem;
+      margin-top: 2rem;
+    }
+
+    .lab-card {
+      background: white;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .lab-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #667eea, #764ba2);
+    }
+
+    .lab-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+    }
+
+    .lab-card.coming-soon {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .lab-card.coming-soon:hover {
+      transform: none;
+    }
+
+    .lab-number {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .lab-card h2 {
+      font-size: 1.75rem;
+      margin-bottom: 1rem;
+      color: #333;
+    }
+
+    .lab-card p {
+      color: #666;
+      margin-bottom: 1.5rem;
+      line-height: 1.8;
+    }
+
+    .quick-commands {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+    }
+
+    .quick-commands .command {
+      color: #667eea;
+      margin: 0.25rem 0;
+    }
+
+    .start-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 1rem 2rem;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      width: 100%;
+      transition: opacity 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+
+    .start-btn:hover {
+      opacity: 0.9;
+    }
+
+    .start-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .coming-soon-badge {
+      background: #e9ecef;
+      color: #6c757d;
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      display: inline-block;
+      margin-top: 1rem;
+    }
+
+    footer {
+      text-align: center;
+      color: white;
+      margin-top: 4rem;
+      padding: 2rem 0;
+      opacity: 0.9;
+    }
+
+    footer a {
+      color: white;
+      text-decoration: underline;
+    }
+
+    @media (max-width: 768px) {
+      header h1 {
+        font-size: 2rem;
+      }
+
+      .labs-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .container {
+        padding: 1rem;
+      }
+    }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>The Accidental CTO</h1>
+      <p>Interactive Labs - Learn System Design by Doing</p>
+    </header>
+
+    <div class="labs-grid">
+      <!-- Lab 1: The 3AM Crash -->
+      <div class="lab-card">
+        <span class="lab-number">Lab 1</span>
+        <h2>The 3AM Crash</h2>
+        <p>Your server just crashed at 3 AM. Learn to diagnose and fix the immediate issue, then implement a long-term architectural solution.</p>
+        
+        <div class="quick-commands">
+          <div class="command">$ htop</div>
+          <div class="command">$ systemctl status app</div>
+          <div class="command">$ journalctl -u app</div>
+          <div class="command">$ systemctl restart app</div>
+        </div>
+
+        <button class="start-btn" onclick="startLab('lab-01-3am-crash')" id="lab1-btn">
+          Start Lab →
+        </button>
+      </div>
+
+      <!-- Lab 2: The Traffic Cop -->
+      <div class="lab-card">
+        <span class="lab-number">Lab 2</span>
+        <h2>The Traffic Cop</h2>
+        <p>Your traffic just exploded! Learn about vertical vs horizontal scaling, load balancing, and building fault-tolerant architectures.</p>
+        
+        <div class="quick-commands">
+          <div class="command">$ htop</div>
+          <div class="command">$ traffic</div>
+          <div class="command">$ setup-nginx</div>
+          <div class="command">$ add-server</div>
+        </div>
+
+        <span class="coming-soon-badge">Coming Soon</span>
+      </div>
+
+      <!-- Lab 3: Coming Soon -->
+      <div class="lab-card coming-soon">
+        <span class="lab-number">Lab 3</span>
+        <h2>Coming Soon</h2>
+        <p>More interactive labs coming soon. Learn about caching with Redis, database replication, and more advanced system design concepts.</p>
+        
+        <span class="coming-soon-badge">Coming Soon</span>
+      </div>
+    </div>
+
+    {% comment %} <footer>
+      <p>Based on book written by Subhash Choudhary (@subhashchy)</p>
+      <p>Made with ❤️ for learning system design</p>
+    </footer> {% endcomment %}
+  </div>
+
+  <script>
+    async function startLab(labId) {
+      const btn = document.getElementById('lab1-btn');
+      const originalText = btn.textContent;
+      
+      // Show loading state
+      btn.disabled = true;
+      btn.innerHTML = 'Starting Lab...<span class="loading"></span>';
+      
+      try {
+        // Start the lab
+        const response = await fetch(`/api/start/?lab=${labId}`);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (!data.container_name) {
+          throw new Error("Container name not found in response");
+        }
+        
+        // Redirect to terminal page with container name
+        window.location.href = `/lab/${data.container_name}/`;
+        
+      } catch (error) {
+        alert("Error starting lab: " + error.message);
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+  </script>
+</body>
+</html>
+

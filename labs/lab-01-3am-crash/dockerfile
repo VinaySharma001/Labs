@@ -1,0 +1,20 @@
+FROM ubuntu:22.04
+
+# install basic tools & python
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+    python3 python3-pip procps htop curl git
+
+WORKDIR /opt/app
+COPY app /opt/app
+COPY validator /opt/validator
+COPY scenario /opt/scenario
+
+RUN pip3 install Flask
+
+EXPOSE 8080
+
+# ensure validator & scenario are executable
+RUN chmod +x /opt/validator/validator.sh /opt/scenario/start_pressure.sh
+
+# Start the app
+CMD ["python3", "/opt/app/app.py"]

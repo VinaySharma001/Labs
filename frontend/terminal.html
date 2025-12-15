@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+  <head>
+    <link rel="stylesheet" href="https://unpkg.com/xterm/css/xterm.css" />
+  </head>
+  <body>
+    <div id="terminal" style="width:800px;height:400px;"></div>
+    <script src="https://unpkg.com/xterm/lib/xterm.js"></script>
+    <script>
+      const term = new Terminal();
+      term.open(document.getElementById('terminal'));
+
+      // get container name from server when started
+      const containerName = "<PUT_CONTAINER_NAME_HERE>";
+      const ws = new WebSocket("ws://localhost:8000/ws/terminal/?container=" + containerName);
+      ws.binaryType = "arraybuffer";
+
+      ws.onopen = () => {
+        term.write("Connected to lab\\r\\n");
+      };
+      ws.onmessage = (evt) => {
+        term.write(evt.data);
+      };
+      term.onData(data => {
+        ws.send(data);
+      });
+    </script>
+  </body>
+</html>
